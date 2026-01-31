@@ -413,4 +413,19 @@ mod tests {
         assert!(!runner.was_deleted(7)); // keep_last 2
         assert!(!runner.was_deleted(10)); // current
     }
+
+    #[test]
+    fn test_clean_current_not_last_generation() {
+        // Scenario: User rolled back from generation 5 to generation 3
+        // Generations 4 and 5 exist but are newer than current
+        let runner = MockNixOsRunner::with_current(vec![1, 2, 3, 4, 5], 3);
+        clean_generations(&runner, None, false).unwrap();
+
+        // Should delete everything except current (3)
+        assert!(runner.was_deleted(1));
+        assert!(runner.was_deleted(2));
+        assert!(!runner.was_deleted(3)); // current
+        assert!(runner.was_deleted(4)); // newer than current, but not current
+        assert!(runner.was_deleted(5)); // newer than current, but not current
+    }
 }

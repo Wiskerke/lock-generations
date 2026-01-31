@@ -94,14 +94,13 @@ impl NixOsCommandRunner for RealNixOsRunner {
             return Ok(());
         }
 
-        // Build the generation list string: "1 2 3 4"
+        // Build the generation list as separate arguments
         let gen_list: Vec<String> = generations.iter().map(|g| g.to_string()).collect();
-        let gen_arg = gen_list.join(" ");
 
         // Execute: nix-env --delete-generations 1 2 3 -p /nix/var/nix/profiles/system
         let output = Command::new("nix-env")
             .arg("--delete-generations")
-            .arg(&gen_arg)
+            .args(&gen_list)
             .arg("-p")
             .arg(&self.profile_path)
             .output()
