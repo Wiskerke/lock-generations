@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use users::{get_user_by_name, get_current_uid, get_user_by_uid};
 use users::os::unix::UserExt;
+use users::{get_current_uid, get_user_by_name, get_user_by_uid};
 
 /// Protected generations state
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,8 +59,8 @@ impl ProtectedState {
         }
 
         // Serialize to JSON with pretty printing
-        let contents = serde_json::to_string_pretty(self)
-            .context("Failed to serialize protected state")?;
+        let contents =
+            serde_json::to_string_pretty(self).context("Failed to serialize protected state")?;
 
         // Write atomically by writing to a temp file and renaming
         let tmp_path = path.with_extension("tmp");
@@ -114,9 +114,7 @@ impl ProtectedState {
             home.join(".config")
         };
 
-        Ok(config_dir
-            .join("lock-generations")
-            .join("protected.json"))
+        Ok(config_dir.join("lock-generations").join("protected.json"))
     }
 
     /// Get the current user's home directory

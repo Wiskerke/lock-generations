@@ -28,9 +28,9 @@ impl Default for RealNixOsRunner {
     }
 }
 
-impl NixOsCommandRunner for RealNixOsRunner {
-    fn list_generations(&self) -> Result<Vec<Generation>> {
-        // Execute: nix-env --list-generations -p /nix/var/nix/profiles/system
+impl RealNixOsRunner {
+    /// Execute nix-env --list-generations and return the stdout
+    fn get_generations_output(&self) -> Result<String> {
         let output = Command::new("nix-env")
             .arg("--list-generations")
             .arg("-p")
@@ -43,7 +43,13 @@ impl NixOsCommandRunner for RealNixOsRunner {
             anyhow::bail!("nix-env --list-generations failed: {}", stderr);
         }
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    }
+}
+
+impl NixOsCommandRunner for RealNixOsRunner {
+    fn list_generations(&self) -> Result<Vec<Generation>> {
+        let stdout = self.get_generations_output()?;
         let mut generations = Vec::new();
 
         // Parse output format:
@@ -57,10 +63,10 @@ impl NixOsCommandRunner for RealNixOsRunner {
             }
 
             // Extract the generation number (first token)
-            if let Some(number_str) = line.split_whitespace().next() {
-                if let Ok(number) = number_str.parse::<u32>() {
-                    generations.push(Generation { number });
-                }
+            if let Some(number_str) = line.split_whitespace().next()
+                && let Ok(number) = number_str.parse::<u32>()
+            {
+                generations.push(Generation { number });
             }
         }
 
@@ -68,29 +74,15 @@ impl NixOsCommandRunner for RealNixOsRunner {
     }
 
     fn get_current_generation(&self) -> Result<u32> {
-        // Execute: nix-env --list-generations -p /nix/var/nix/profiles/system
-        let output = Command::new("nix-env")
-            .arg("--list-generations")
-            .arg("-p")
-            .arg(&self.profile_path)
-            .output()
-            .context("Failed to execute nix-env --list-generations")?;
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            anyhow::bail!("nix-env --list-generations failed: {}", stderr);
-        }
-
-        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stdout = self.get_generations_output()?;
 
         // Find the line with "(current)" marker
         for line in stdout.lines() {
-            if line.contains("(current)") {
-                if let Some(number_str) = line.trim().split_whitespace().next() {
-                    if let Ok(number) = number_str.parse::<u32>() {
-                        return Ok(number);
-                    }
-                }
+            if line.contains("(current)")
+                && let Some(number_str) = line.split_whitespace().next()
+                && let Ok(number) = number_str.parse::<u32>()
+            {
+                return Ok(number);
             }
         }
 

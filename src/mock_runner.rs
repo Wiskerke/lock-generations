@@ -41,11 +41,6 @@ impl MockNixOsRunner {
         self
     }
 
-    /// Get the set of deleted generation numbers (for test verification)
-    pub fn get_deleted_generations(&self) -> HashSet<u32> {
-        self.deleted_generations.borrow().clone()
-    }
-
     /// Check if a generation was deleted
     pub fn was_deleted(&self, generation: u32) -> bool {
         self.deleted_generations.borrow().contains(&generation)
@@ -127,10 +122,12 @@ mod tests {
         let runner = MockNixOsRunner::with_current(vec![1, 2, 3], 3);
         let result = runner.delete_generations(&[3]);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Cannot delete current generation"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Cannot delete current generation")
+        );
     }
 
     #[test]
