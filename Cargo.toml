@@ -2,6 +2,8 @@
 name = "lock-generations"
 version = "1.0.0"
 edition = "2024"
+license = "BSD-3-Clause"
+authors = ["Johan Wiskerke"]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
