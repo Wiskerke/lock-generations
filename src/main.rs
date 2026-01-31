@@ -1,4 +1,5 @@
 mod command_runner;
+#[cfg(test)]
 mod mock_runner;
 mod protected_state;
 mod real_runner;

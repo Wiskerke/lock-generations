@@ -82,6 +82,7 @@ impl ProtectedState {
     }
 
     /// Check if a generation is protected
+    #[allow(dead_code)]
     pub fn is_protected(&self, generation: u32) -> bool {
         self.protected_generations.contains(&generation)
     }

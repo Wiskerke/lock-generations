@@ -16,6 +16,7 @@ impl RealNixOsRunner {
     }
 
     /// Create a new RealNixOsRunner with a custom profile path (useful for testing)
+    #[allow(dead_code)]
     pub fn with_profile(profile_path: String) -> Self {
         Self { profile_path }
     }
