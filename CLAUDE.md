@@ -68,7 +68,7 @@ The tool should support these subcommands:
 
 ## Implementation Notes
 
-- Protected generations list should be persisted (consider storing in a config file or state file)
+- Protected generations list is persisted in `~/.config/lock-generations/protected.json` (JSON format)
 - The tool needs to identify NixOS system generations (typically from `/nix/var/nix/profiles/`)
 - Deletion should be performed by invoking NixOS commands:
   - `nix-env --delete-generations <generation-numbers>` for deleting specific generations
@@ -76,6 +76,7 @@ The tool should support these subcommands:
 - Should require appropriate permissions to delete generations (likely needs sudo/root)
 - Current generation must always be preserved regardless of protection status
 - The tool's responsibility is to determine the list of deletable generations based on protection rules, not to perform the deletion itself
+- **Sudo config handling**: When running with sudo, the tool detects the original user via `SUDO_USER` environment variable and uses their config file, allowing users to manage protections as a regular user and run cleanup with sudo
 
 ## Testing Strategy
 

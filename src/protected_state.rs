@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use users::{get_user_by_name, get_current_uid, get_user_by_uid};
+use users::os::unix::UserExt;
 
 /// Protected generations state
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,18 +91,48 @@ impl ProtectedState {
 
     /// Get the default config file path
     /// Uses XDG_CONFIG_HOME if set, otherwise ~/.config
+    /// When running under sudo, uses the original user's home directory
     fn default_config_path() -> Result<PathBuf> {
         let config_dir = if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
+            // XDG_CONFIG_HOME is set, use it directly
             PathBuf::from(xdg_config)
-        } else if let Ok(home) = std::env::var("HOME") {
-            PathBuf::from(home).join(".config")
         } else {
-            anyhow::bail!("Could not determine config directory (HOME not set)");
+            // Check if we're running under sudo
+            let home = if let Ok(sudo_user) = std::env::var("SUDO_USER") {
+                // Running under sudo - get the original user's home directory
+                if let Some(user) = get_user_by_name(&sudo_user) {
+                    user.home_dir().to_path_buf()
+                } else {
+                    // Fall back to current user if we can't find sudo user
+                    Self::get_current_user_home()?
+                }
+            } else {
+                // Not running under sudo, use current user's home
+                Self::get_current_user_home()?
+            };
+
+            home.join(".config")
         };
 
         Ok(config_dir
             .join("lock-generations")
             .join("protected.json"))
+    }
+
+    /// Get the current user's home directory
+    fn get_current_user_home() -> Result<PathBuf> {
+        // Try HOME environment variable first
+        if let Ok(home) = std::env::var("HOME") {
+            return Ok(PathBuf::from(home));
+        }
+
+        // Fall back to looking up current user
+        let uid = get_current_uid();
+        if let Some(user) = get_user_by_uid(uid) {
+            return Ok(user.home_dir().to_path_buf());
+        }
+
+        anyhow::bail!("Could not determine home directory")
     }
 }
 

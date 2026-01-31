@@ -26,6 +26,8 @@ The tool acts as a smart wrapper around NixOS's built-in generation management c
 
 ## Usage
 
+### Basic Commands
+
 ```bash
 # Add protection to a specific generation
 lock-generations protect <generation-number>
@@ -39,15 +41,37 @@ lock-generations list
 # Preview what would be deleted without actually deleting
 lock-generations clean --dry-run
 
-# Clean up all unprotected generations
-lock-generations clean
+# Clean up all unprotected generations (requires sudo)
+sudo lock-generations clean
 
 # Clean up while keeping the last N generations
-lock-generations clean --keep-last N
+sudo lock-generations clean --keep-last N
 
 # Combine options: preview cleanup while keeping last 3 generations
 lock-generations clean --keep-last 3 --dry-run
 ```
+
+### Typical Workflow
+
+The typical workflow is to manage protections as your regular user, then run the actual cleanup with sudo:
+
+```bash
+# 1. Protect important generations (as regular user)
+lock-generations protect 42
+lock-generations protect 50
+
+# 2. Preview what would be deleted (as regular user)
+lock-generations clean --dry-run
+
+# 3. Actually perform the cleanup (with sudo)
+sudo lock-generations clean
+```
+
+**Note**: The tool automatically finds your user's config file even when running with sudo, so protected generations set as your regular user will be respected when running `sudo lock-generations clean`.
+
+### Config File Location
+
+Protected generations are stored in `~/.config/lock-generations/protected.json` (or `$XDG_CONFIG_HOME/lock-generations/protected.json` if set).
 
 ## Development
 
