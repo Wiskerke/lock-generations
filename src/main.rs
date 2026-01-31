@@ -35,6 +35,9 @@ enum Commands {
         /// Keep the last N most recent generations
         #[arg(long)]
         keep_last: Option<usize>,
+        /// Show what would be done without actually deleting
+        #[arg(long)]
+        dry_run: bool,
     },
     /// List all protected generations
     List,
@@ -47,7 +50,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Protect { generation } => protect_generation(generation),
         Commands::Unprotect { generation } => unprotect_generation(generation),
-        Commands::Clean { keep_last } => clean_generations(&runner, keep_last),
+        Commands::Clean { keep_last, dry_run } => clean_generations(&runner, keep_last, dry_run),
         Commands::List => list_protected(),
     }
 }
@@ -78,7 +81,7 @@ fn unprotect_generation(generation: u32) -> Result<()> {
     Ok(())
 }
 
-fn clean_generations(runner: &dyn NixOsCommandRunner, keep_last: Option<usize>) -> Result<()> {
+fn clean_generations(runner: &dyn NixOsCommandRunner, keep_last: Option<usize>, dry_run: bool) -> Result<()> {
     let state = ProtectedState::load()?;
     let current = runner.get_current_generation()?;
     let all_generations = runner.list_generations()?;
@@ -118,9 +121,18 @@ fn clean_generations(runner: &dyn NixOsCommandRunner, keep_last: Option<usize>) 
         return Ok(());
     }
 
-    println!("Deleting {} generation(s): {:?}", to_delete.len(), to_delete);
-    runner.delete_generations(&to_delete)?;
-    println!("Successfully deleted {} generation(s)", to_delete.len());
+    if dry_run {
+        println!("[DRY RUN] Would delete {} generation(s): {:?}", to_delete.len(), to_delete);
+        println!();
+        println!("Command that would be executed:");
+        let gen_list: Vec<String> = to_delete.iter().map(|g| g.to_string()).collect();
+        let gen_arg = gen_list.join(" ");
+        println!("  nix-env --delete-generations {} -p /nix/var/nix/profiles/system", gen_arg);
+    } else {
+        println!("Deleting {} generation(s): {:?}", to_delete.len(), to_delete);
+        runner.delete_generations(&to_delete)?;
+        println!("Successfully deleted {} generation(s)", to_delete.len());
+    }
 
     Ok(())
 }
@@ -150,7 +162,7 @@ mod tests {
     #[test]
     fn test_clean_no_protected() {
         let runner = MockNixOsRunner::with_current(vec![1, 2, 3, 4, 5], 5);
-        clean_generations(&runner, None).unwrap();
+        clean_generations(&runner, None, false).unwrap();
 
         // Should delete all except current (5)
         assert!(runner.was_deleted(1));
@@ -163,12 +175,25 @@ mod tests {
     #[test]
     fn test_clean_with_keep_last() {
         let runner = MockNixOsRunner::with_current(vec![1, 2, 3, 4, 5], 5);
-        clean_generations(&runner, Some(2)).unwrap();
+        clean_generations(&runner, Some(2), false).unwrap();
 
         // Should delete 1, 2, 3 and keep 4, 5 (last 2)
         assert!(runner.was_deleted(1));
         assert!(runner.was_deleted(2));
         assert!(runner.was_deleted(3));
+        assert!(!runner.was_deleted(4));
+        assert!(!runner.was_deleted(5));
+    }
+
+    #[test]
+    fn test_clean_dry_run() {
+        let runner = MockNixOsRunner::with_current(vec![1, 2, 3, 4, 5], 5);
+        clean_generations(&runner, None, true).unwrap();
+
+        // Dry run should not delete anything
+        assert!(!runner.was_deleted(1));
+        assert!(!runner.was_deleted(2));
+        assert!(!runner.was_deleted(3));
         assert!(!runner.was_deleted(4));
         assert!(!runner.was_deleted(5));
     }
