@@ -2,6 +2,17 @@
 
 A command-line tool for managing NixOS system generations with selective protection.
 
+## Human message
+
+Hi, there. This is just a short message written by the human who started this repository. 
+
+Most of this project is creating using AI (Claude). 
+The purpose of this project was both to satisfy a small personal need, as well as get some experience in using claude code.
+
+I am happy with the end result for my personal usage. I did review the code, which seem fine, although I'm not experienced in rust. Personally I think the unit tests could have been better, but the rest looks functional and works pretty good for a small personal project. 
+
+Anyways, with that out of the way, I'll let Claude explain about the tool...
+
 ## Overview
 
 `lock-generations` is a utility that helps clean up old NixOS generations while preserving specific generations you want to keep. Unlike the standard `nix-collect-garbage` commands, this tool allows you to explicitly protect certain generations from deletion.
@@ -95,11 +106,3 @@ Run code quality checks:
 cargo clippy -- -D warnings  # Linting with no warnings allowed
 cargo fmt --check             # Check code formatting
 ```
-
-### Development Status
-
-✅ Core functionality is fully implemented and tested
-✅ All 18 tests passing
-✅ No clippy warnings
-✅ Code properly formatted and documented
-✅ Ready for use on NixOS systems
